@@ -1,0 +1,57 @@
+// Production schema. Run: npx prisma migrate deploy
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String       @id @default(cuid())
+  email         String       @unique
+  passwordHash  String?
+  name          String?
+  createdAt     DateTime     @default(now())
+  credits       Int          @default(10)
+  generations   Generation[]
+  tracks        Track[]
+}
+
+// One user submission can produce multiple track variants (Suno-style: 2 per request).
+model Generation {
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  prompt        String
+  styleTags     String[]
+  instrumental  Boolean  @default(false)
+  status        String   @default("pending") // pending | processing | complete | failed
+  providerJobId String?  // id returned by the external music-gen API
+  errorMessage  String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  tracks        Track[]
+
+  @@index([userId, status])
+}
+
+model Track {
+  id            String     @id @default(cuid())
+  userId        String
+  user          User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  generationId  String
+  generation    Generation @relation(fields: [generationId], references: [id], onDelete: Cascade)
+  title         String
+  audioUrl      String?    // final CDN/storage URL once render completes
+  coverUrl      String?
+  durationSecs  Int?
+  tagKey        String?
+  isPublic      Boolean    @default(false)
+  plays         Int        @default(0)
+  createdAt     DateTime   @default(now())
+
+  @@index([userId])
+  @@index([isPublic])
+}
