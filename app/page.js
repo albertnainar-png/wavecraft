@@ -90,7 +90,7 @@ export default function CreatePage() {
             value={lyrics}
             onChange={(e) => setLyrics(e.target.value)}
             rows={6}
-            maxLength={6000}
+            maxLength={4096}
             disabled={instrumental}
             placeholder={"[Verse 1]\nWrite your lyrics here...\n\n[Chorus]\n..."}
             className="mt-2 w-full resize-y rounded-lg border border-line bg-ink p-3 text-sm outline-none focus-visible:border-amber disabled:opacity-40"
