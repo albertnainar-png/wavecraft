@@ -42,8 +42,8 @@ Android phone / desktop browser
 2. Next.js validates the session and request, reserves one app credit, and creates a Generation row.
 3. The server adapter submits POST /release_task to ACE-Step.
 4. The app stores the returned task_id and polls POST /query_result.
-5. On success, the adapter parses the model result and stores playable same-origin audio proxy URLs in Track rows.
-6. The user plays the MP3. The proxy only permits the configured host's /v1/audio endpoint and attaches the API key server-side.
+5. On success, the adapter parses the model result and stores lyrics, BPM, key, duration and the private provider audio path in Track rows.
+6. Each Track receives a same-origin audio URL containing only its track ID. The authenticated audio route checks track ownership, then proxies the private provider path to the configured host's /v1/audio endpoint with the API key server-side.
 
 ## Required environment
 
@@ -66,11 +66,18 @@ ACE-Step documentation recommends the 2B Turbo family for smaller GPU tiers. Lar
 
 - Keep the GPU API private where possible; use HTTPS and a long random API key.
 - Never put the GPU key in frontend JavaScript.
-- The audio proxy only permits requests to the configured host's /v1/audio path, preventing an open proxy.
+- The audio proxy requires sign-in, verifies that the requesting user owns the track, and only permits requests to the configured host's /v1/audio path.
 - Add request rate limits and per-user usage limits before public launch.
 - Add a durable queue and retry policy before multiple users share one GPU.
 - Persist generated files to object storage or a durable volume before using ephemeral GPU hosts in production.
 - Review model and dataset licences before commercial distribution.
+
+## Generation modes
+
+- User-supplied lyrics: submitted as prompt + lyrics with LM thinking disabled, allowing the 2B DiT to run without a 5Hz language model.
+- Instrumental: uses ACE-Step's `[Instrumental]` lyrics marker and LM thinking disabled.
+- Description-only auto-lyrics: uses `sample_query` with LM thinking enabled and therefore requires a compatible 5Hz language model to be loaded.
+- The app requests one output per job by default to keep VRAM use conservative.
 
 ## Current implementation boundary
 
