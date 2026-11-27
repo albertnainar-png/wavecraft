@@ -5,7 +5,7 @@ A mobile-first, independent AI song creation studio built on open-source compone
 ## Features
 
 - Song description and style selection.
-- Optional user-written lyrics, or model-generated lyrics from a description.
+- Optional user-written lyrics, or model-generated lyrics from a description when the ACE-Step language model is enabled.
 - Vocal-language selection and instrumental-only mode.
 - Asynchronous ACE-Step generation jobs.
 - MP3 playback through a same-origin audio proxy.
@@ -19,7 +19,7 @@ The Next.js app is the control plane. ACE-Step runs separately on a GPU worker. 
 
 ACE-Step 1.5 repository: https://github.com/ace-step/ACE-Step-1.5
 
-Start with the 2B Turbo model. Check the official hardware guide against the actual GPU before provisioning. Larger XL variants need more VRAM.
+Start with the 2B Turbo model. For a low-VRAM 2B setup, user-written lyrics and instrumentals can run without the language model. Description-only auto-lyrics use ACE-Step's language model, so install a compatible 5Hz LM; current guidance recommends the 0.6B LM in the 6–8GB VRAM tier. Check the official hardware guide against the actual GPU before provisioning. Larger XL variants need more VRAM.
 
 ## Configure
 
@@ -34,7 +34,7 @@ ACESTEP_API_URL is the base URL of the running ACE-Step API, for example https:/
     npx prisma generate
     npm run dev
 
-The database must have the Prisma schema applied before sign-up and library features work.
+The repository includes an initial PostgreSQL migration and a follow-up migration for lyrics and track metadata. Apply them with `npx prisma migrate deploy` before sign-up and library features work.
 
 ## Connect the model
 
