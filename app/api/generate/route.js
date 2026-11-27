@@ -9,7 +9,7 @@ const schema = z.object({
   prompt: z.string().min(3).max(500),
   styleTags: z.array(z.string()).min(1).max(5),
   instrumental: z.boolean().default(false),
-  lyrics: z.string().max(6000).optional().default(""),
+  lyrics: z.string().max(4096).optional().default(""),
   vocalLanguage: z.string().max(12).optional().default("en"),
 });
 
