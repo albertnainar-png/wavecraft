@@ -164,6 +164,7 @@ export default function CreatePage() {
           <p className="font-mono text-xs text-muted">
             Job {generation.id.slice(0, 8)} — status: <span className="text-teal">{generation.status}</span>
           </p>
+          {generation.lyrics && <details className="mt-3"><summary className="cursor-pointer text-xs font-semibold text-teal">View submitted lyrics</summary><pre className="mt-2 whitespace-pre-wrap text-sm text-muted">{generation.lyrics}</pre></details>}
           {generation.status === "failed" && (
             <p className="mt-2 text-sm text-magenta">{generation.errorMessage || "Generation failed."}</p>
           )}
@@ -172,8 +173,10 @@ export default function CreatePage() {
               {generation.tracks.map((track) => (
                 <div key={track.id} className="rounded-lg border border-line p-3">
                   <p className="text-sm font-semibold">{track.title}</p>
+                  <p className="mt-1 text-xs text-muted">{[track.bpm ? track.bpm + " BPM" : null, track.keyScale || null, track.durationSecs ? Math.floor(track.durationSecs / 60) + ":" + String(track.durationSecs % 60).padStart(2, "0") : null].filter(Boolean).join(" · ")}</p>
                   {track.audioUrl ? (
                     <audio controls preload="none" src={track.audioUrl} className="mt-2 w-full" />
+                    <a href={track.audioUrl} download className="mt-2 inline-block text-xs font-semibold text-teal underline">Download MP3</a>
                   ) : (
                     <p className="mt-2 text-xs text-muted">Audio not yet available.</p>
                   )}
