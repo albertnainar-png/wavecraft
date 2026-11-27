@@ -10,7 +10,7 @@ export async function GET(request) {
     return NextResponse.json({ error: "Sign in required" }, { status: 401 });
   }
 
-  const base = (process.env.ACESTEP_API_URL || "").replace(/\\/+$/, "");
+  const base = (process.env.ACESTEP_API_URL || "").replace(/\/+$/, "");
   if (!base) return NextResponse.json({ error: "Audio engine is not configured" }, { status: 503 });
 
   const trackId = new URL(request.url).searchParams.get("trackId");
