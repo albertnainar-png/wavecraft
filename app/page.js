@@ -96,7 +96,7 @@ export default function CreatePage() {
             className="mt-2 w-full resize-y rounded-lg border border-line bg-ink p-3 text-sm outline-none focus-visible:border-amber disabled:opacity-40"
           />
           <p className="mt-1 text-xs text-muted">
-            Leave blank for the model to create lyrics from your idea, or add your own to guide the vocal performance.
+            Leave blank for model-written lyrics (requires the ACE-Step language model), or add your own. User-written lyrics and instrumentals can run without the language model.
           </p>
         </div>
 
