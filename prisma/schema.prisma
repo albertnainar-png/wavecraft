@@ -27,6 +27,8 @@ model Generation {
   prompt        String
   styleTags     String[]
   instrumental  Boolean  @default(false)
+  lyrics        String?  @db.Text
+  vocalLanguage String   @default("en")
   status        String   @default("pending") // pending | processing | complete | failed
   providerJobId String?  // id returned by the external music-gen API
   errorMessage  String?
@@ -47,6 +49,8 @@ model Track {
   audioUrl      String?    // final CDN/storage URL once render completes
   coverUrl      String?
   durationSecs  Int?
+  bpm           Int?
+  keyScale      String?
   tagKey        String?
   isPublic      Boolean    @default(false)
   plays         Int        @default(0)
