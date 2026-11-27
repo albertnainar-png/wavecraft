@@ -39,7 +39,7 @@ export async function POST(req) {
       data: { credits: { decrement: CREDIT_COST } },
     });
     return tx.generation.create({
-      data: { userId: user.id, prompt, styleTags, instrumental, status: "pending" },
+      data: { userId: user.id, prompt, styleTags, instrumental, lyrics, vocalLanguage, status: "pending" },
     });
   });
 
