@@ -44,6 +44,7 @@ export async function GET(_req, { params }) {
           title: t.title || `${generation.prompt.slice(0, 40)} (${i + 1})`,
           audioUrl: t.audioUrl,
           coverUrl: t.coverUrl,
+          lyrics: t.lyrics,
           durationSecs: t.durationSecs,
           bpm: t.bpm,
           keyScale: t.keyScale,
