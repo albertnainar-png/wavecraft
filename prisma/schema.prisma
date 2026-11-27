@@ -48,6 +48,7 @@ model Track {
   title         String
   audioUrl      String?    // final CDN/storage URL once render completes
   coverUrl      String?
+  lyrics        String?    @db.Text
   durationSecs  Int?
   bpm           Int?
   keyScale      String?
