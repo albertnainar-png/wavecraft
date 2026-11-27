@@ -28,7 +28,12 @@ export async function GET(_req, { params }) {
     return NextResponse.json({ generation });
   }
 
-  const result = await checkGenerationStatus(generation.providerJobId);
+  let result;
+  try {
+    result = await checkGenerationStatus(generation.providerJobId);
+  } catch (err) {
+    return NextResponse.json({ error: "Unable to check music generation status", detail: String(err.message || err) }, { status: 502 });
+  }
 
   if (result.status === "complete" && generation.tracks.length === 0) {
     const updated = await db.$transaction(async (tx) => {
@@ -40,6 +45,8 @@ export async function GET(_req, { params }) {
           audioUrl: t.audioUrl,
           coverUrl: t.coverUrl,
           durationSecs: t.durationSecs,
+          bpm: t.bpm,
+          keyScale: t.keyScale,
           tagKey: generation.styleTags[0] || null,
         })),
       });
