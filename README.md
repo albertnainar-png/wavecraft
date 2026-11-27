@@ -38,7 +38,28 @@ The repository includes an initial PostgreSQL migration and a follow-up migratio
 
 ## Connect the model
 
-On a GPU machine, follow the official ACE-Step 1.5 installation guide and start its API server. The documented default API port is 8001. Make the endpoint reachable by the Next.js server over HTTPS, configure the same API key on both services, then set ACESTEP_API_URL and ACESTEP_API_KEY in the web app environment.
+On a GPU machine, follow the official ACE-Step 1.5 installation guide:
+
+    git clone https://github.com/ACE-Step/ACE-Step-1.5.git
+    cd ACE-Step-1.5
+    uv sync
+
+For a DiT-only 2B Turbo worker (no auto-generated lyrics):
+
+    export SERVER_NAME=0.0.0.0
+    export PORT=8001
+    export ACESTEP_CONFIG_PATH=acestep-v15-turbo
+    export ACESTEP_INIT_LLM=false
+    export ACESTEP_API_KEY="use-a-long-random-secret"
+    uv run acestep-api
+
+For description-only auto-lyrics, use a compatible 5Hz LM instead of disabling it. The official guide recommends the 0.6B LM in the 6–8GB VRAM tier:
+
+    export ACESTEP_INIT_LLM=true
+    export ACESTEP_LM_MODEL_PATH=acestep-5Hz-lm-0.6B
+    export ACESTEP_LM_BACKEND=pt
+
+Make the endpoint reachable by the Next.js server over HTTPS, configure the same API key on both services, then set ACESTEP_API_URL and ACESTEP_API_KEY in the web app environment. Do not expose the API server directly to the public internet without authentication and TLS.
 
 Useful engine checks:
 - GET /health
