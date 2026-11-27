@@ -2,11 +2,13 @@
 import { useState, useRef, useEffect } from "react";
 import { useSession, signIn } from "next-auth/react";
 
-const TAGS = ["Dreamy Pop", "Epic Orchestral", "Lo-fi Chill", "Dance / EDM", "Acoustic Folk", "Dark Synth"];
+const TAGS = ["Dreamy Pop", "Epic Orchestral", "Lo-fi Chill", "Dance / EDM", "Acoustic Folk", "Dark Synth", "Worship", "Cinematic"];
 
 export default function CreatePage() {
   const { data: session, status } = useSession();
   const [prompt, setPrompt] = useState("");
+  const [lyrics, setLyrics] = useState("");
+  const [vocalLanguage, setVocalLanguage] = useState("en");
   const [tag, setTag] = useState(TAGS[0]);
   const [instrumental, setInstrumental] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -19,7 +21,6 @@ export default function CreatePage() {
   async function handleGenerate() {
     if (!prompt.trim() || submitting) return;
     setError(null);
-
     if (status !== "authenticated") {
       signIn();
       return;
@@ -30,22 +31,26 @@ export default function CreatePage() {
       const res = await fetch("/api/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt, styleTags: [tag], instrumental }),
+        body: JSON.stringify({ prompt, lyrics, vocalLanguage, styleTags: [tag], instrumental }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Generation failed to start");
+      if (!res.ok) throw new Error(data.detail || data.error || "Generation failed to start");
       setGeneration(data.generation);
 
       pollRef.current = setInterval(async () => {
-        const r = await fetch(`/api/generations/${data.generation.id}`);
-        const d = await r.json();
-        if (!r.ok) return;
-        setGeneration(d.generation);
-        if (d.generation.status === "complete" || d.generation.status === "failed") {
-          clearInterval(pollRef.current);
-          setSubmitting(false);
+        try {
+          const r = await fetch("/api/generations/" + data.generation.id, { cache: "no-store" });
+          const d = await r.json();
+          if (!r.ok) return;
+          setGeneration(d.generation);
+          if (d.generation.status === "complete" || d.generation.status === "failed") {
+            clearInterval(pollRef.current);
+            setSubmitting(false);
+          }
+        } catch {
+          // Keep polling through temporary network interruptions.
         }
-      }, 4000);
+      }, 5000);
     } catch (e) {
       setError(e.message);
       setSubmitting(false);
@@ -53,46 +58,86 @@ export default function CreatePage() {
   }
 
   return (
-    <main className="mx-auto max-w-3xl px-5 pb-24 pt-14">
-      <p className="font-mono text-xs uppercase tracking-[0.2em] text-teal">Wavecraft</p>
+    <main className="mx-auto max-w-3xl px-4 pb-24 pt-8 sm:px-5 sm:pt-14">
+      <p className="font-mono text-xs uppercase tracking-[0.2em] text-teal">ALBERT'S AI SONG STUDIO</p>
       <h1 className="mt-3 text-4xl font-bold leading-tight sm:text-5xl">
-        Describe a song.
-        <br />
-        Get a real track back.
+        Your idea.<br />Your lyrics.<br />Your song.
       </h1>
-      <p className="mt-3 max-w-lg text-muted">
-        Requests go to your configured music-generation provider and return actual generated audio —
-        typically in 30–90 seconds.
+      <p className="mt-3 max-w-xl text-muted">
+        Create original vocal songs or instrumentals. Your brief is sent to the connected open-source music engine and returned as playable audio.
       </p>
 
-      <div className="mt-8 rounded-2xl border border-line bg-panel p-5">
+      <div className="mt-8 rounded-2xl border border-line bg-panel p-4 sm:p-5">
         <label htmlFor="prompt" className="font-mono text-[11px] uppercase tracking-wider text-muted">
-          Song description
+          Song idea and sound
         </label>
         <textarea
           id="prompt"
           value={prompt}
           onChange={(e) => setPrompt(e.target.value)}
           rows={3}
-          placeholder="e.g. driving home at 2am, city lights blurring, bittersweet and hopeful"
-          className="mt-2 w-full resize-none rounded-lg border border-line bg-ink p-3 text-sm outline-none focus-visible:border-amber"
+          maxLength={500}
+          placeholder="A hopeful cinematic worship anthem, warm piano, soaring strings, modern drums, intimate verse and powerful chorus..."
+          className="mt-2 w-full resize-y rounded-lg border border-line bg-ink p-3 text-sm outline-none focus-visible:border-amber"
         />
 
-        <div className="mt-4 flex flex-wrap gap-2">
+        <div className="mt-5">
+          <label htmlFor="lyrics" className="font-mono text-[11px] uppercase tracking-wider text-muted">
+            Lyrics (optional)
+          </label>
+          <textarea
+            id="lyrics"
+            value={lyrics}
+            onChange={(e) => setLyrics(e.target.value)}
+            rows={6}
+            maxLength={6000}
+            disabled={instrumental}
+            placeholder={"[Verse 1]\nWrite your lyrics here...\n\n[Chorus]\n..."}
+            className="mt-2 w-full resize-y rounded-lg border border-line bg-ink p-3 text-sm outline-none focus-visible:border-amber disabled:opacity-40"
+          />
+          <p className="mt-1 text-xs text-muted">
+            Leave blank for the model to create lyrics from your idea, or add your own to guide the vocal performance.
+          </p>
+        </div>
+
+        <div className="mt-5">
+          <label htmlFor="language" className="font-mono text-[11px] uppercase tracking-wider text-muted">
+            Vocal language
+          </label>
+          <select
+            id="language"
+            value={vocalLanguage}
+            onChange={(e) => setVocalLanguage(e.target.value)}
+            disabled={instrumental}
+            className="mt-2 w-full rounded-lg border border-line bg-ink p-3 text-sm disabled:opacity-40"
+          >
+            <option value="en">English</option>
+            <option value="hi">Hindi</option>
+            <option value="ta">Tamil</option>
+            <option value="mr">Marathi</option>
+            <option value="es">Spanish</option>
+            <option value="ja">Japanese</option>
+            <option value="zh">Chinese</option>
+          </select>
+          <p className="mt-1 text-xs text-muted">Language output depends on the model's multilingual support. Test each language before publishing.</p>
+        </div>
+
+        <div className="mt-5 flex flex-wrap gap-2">
           {TAGS.map((t) => (
             <button
               key={t}
+              type="button"
               onClick={() => setTag(t)}
-              className={`rounded-full border px-3 py-1.5 text-xs font-medium ${
-                tag === t ? "border-teal bg-teal/15 text-teal" : "border-line text-muted hover:border-teal/40"
-              }`}
+              className={tag === t
+                ? "rounded-full border border-teal bg-teal/15 px-3 py-1.5 text-xs font-medium text-teal"
+                : "rounded-full border border-line px-3 py-1.5 text-xs font-medium text-muted hover:border-teal/40"}
             >
               {t}
             </button>
           ))}
         </div>
 
-        <div className="mt-4 flex items-center justify-between">
+        <div className="mt-5 flex flex-col gap-4 border-t border-line pt-4 sm:flex-row sm:items-center sm:justify-between">
           <label className="flex items-center gap-2 text-sm text-muted">
             <input
               type="checkbox"
@@ -102,13 +147,12 @@ export default function CreatePage() {
             />
             Instrumental only
           </label>
-
           <button
             onClick={handleGenerate}
             disabled={!prompt.trim() || submitting}
-            className="rounded-full bg-magenta px-5 py-2.5 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-40"
+            className="w-full rounded-full bg-magenta px-5 py-3 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-40 sm:w-auto"
           >
-            {submitting ? "Generating…" : status === "authenticated" ? "Generate song" : "Sign in to generate"}
+            {submitting ? "Creating your song…" : status === "authenticated" ? "Generate song" : "Sign in to generate"}
           </button>
         </div>
       </div>
@@ -120,18 +164,16 @@ export default function CreatePage() {
           <p className="font-mono text-xs text-muted">
             Job {generation.id.slice(0, 8)} — status: <span className="text-teal">{generation.status}</span>
           </p>
-
           {generation.status === "failed" && (
             <p className="mt-2 text-sm text-magenta">{generation.errorMessage || "Generation failed."}</p>
           )}
-
           {generation.tracks?.length > 0 && (
             <div className="mt-4 space-y-3">
-              {generation.tracks.map((t) => (
-                <div key={t.id} className="rounded-lg border border-line p-3">
-                  <p className="text-sm font-semibold">{t.title}</p>
-                  {t.audioUrl ? (
-                    <audio controls src={t.audioUrl} className="mt-2 w-full" />
+              {generation.tracks.map((track) => (
+                <div key={track.id} className="rounded-lg border border-line p-3">
+                  <p className="text-sm font-semibold">{track.title}</p>
+                  {track.audioUrl ? (
+                    <audio controls preload="none" src={track.audioUrl} className="mt-2 w-full" />
                   ) : (
                     <p className="mt-2 text-xs text-muted">Audio not yet available.</p>
                   )}
