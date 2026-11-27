@@ -37,20 +37,27 @@ export async function GET(_req, { params }) {
 
   if (result.status === "complete" && generation.tracks.length === 0) {
     const updated = await db.$transaction(async (tx) => {
-      await tx.track.createMany({
-        data: result.tracks.map((t, i) => ({
-          userId: generation.userId,
-          generationId: generation.id,
-          title: t.title || `${generation.prompt.slice(0, 40)} (${i + 1})`,
-          audioUrl: t.audioUrl,
-          coverUrl: t.coverUrl,
-          lyrics: t.lyrics,
-          durationSecs: t.durationSecs,
-          bpm: t.bpm,
-          keyScale: t.keyScale,
-          tagKey: generation.styleTags[0] || null,
-        })),
-      });
+      for (let i = 0; i < result.tracks.length; i += 1) {
+        const t = result.tracks[i];
+        const track = await tx.track.create({
+          data: {
+            userId: generation.userId,
+            generationId: generation.id,
+            title: t.title || `${generation.prompt.slice(0, 40)} (${i + 1})`,
+            providerAudioPath: t.providerAudioPath,
+            coverUrl: t.coverUrl,
+            lyrics: t.lyrics,
+            durationSecs: t.durationSecs,
+            bpm: t.bpm,
+            keyScale: t.keyScale,
+            tagKey: generation.styleTags[0] || null,
+          },
+        });
+        await tx.track.update({
+          where: { id: track.id },
+          data: { audioUrl: "/api/audio?trackId=" + encodeURIComponent(track.id) },
+        });
+      }
       return tx.generation.update({
         where: { id: generation.id },
         data: { status: "complete" },
