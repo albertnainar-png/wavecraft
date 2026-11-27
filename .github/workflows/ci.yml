@@ -1,0 +1,38 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main, "feature/ace-step-hybrid"]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: wavecraft
+          POSTGRES_PASSWORD: wavecraft
+          POSTGRES_DB: wavecraft
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U wavecraft -d wavecraft"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgresql://wavecraft:wavecraft@localhost:5432/wavecraft
+      NEXTAUTH_SECRET: ci-only-secret-not-for-production
+      NEXTAUTH_URL: http://localhost:3000
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm install
+      - run: npx prisma migrate deploy
+      - run: npm run build
