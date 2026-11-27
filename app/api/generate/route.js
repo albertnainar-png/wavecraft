@@ -34,14 +34,19 @@ export async function POST(req) {
 
   const { prompt, styleTags, instrumental, lyrics, vocalLanguage } = parsed.data;
   const generation = await db.$transaction(async (tx) => {
-    await tx.user.update({
-      where: { id: user.id },
+    const debit = await tx.user.updateMany({
+      where: { id: user.id, credits: { gte: CREDIT_COST } },
       data: { credits: { decrement: CREDIT_COST } },
     });
+    if (debit.count !== 1) return null;
     return tx.generation.create({
       data: { userId: user.id, prompt, styleTags, instrumental, lyrics, vocalLanguage, status: "pending" },
     });
   });
+
+  if (!generation) {
+    return NextResponse.json({ error: "Not enough credits" }, { status: 402 });
+  }
 
   try {
     const providerJobId = await requestGeneration({ prompt, styleTags, instrumental, lyrics, vocalLanguage });
