@@ -7,3 +7,5 @@ ALTER TABLE "Track"
   ADD COLUMN "keyScale" TEXT;
 
 ALTER TABLE "Track" ADD COLUMN "lyrics" TEXT;
+
+ALTER TABLE "Track" ADD COLUMN "providerAudioPath" TEXT;
