@@ -14,9 +14,26 @@ export default function CreatePage() {
   const [submitting, setSubmitting] = useState(false);
   const [generation, setGeneration] = useState(null);
   const [error, setError] = useState(null);
+  const [hapticsEnabled, setHapticsEnabled] = useState(false);
+  const [audioPlaying, setAudioPlaying] = useState(false);
+  const [activeBpm, setActiveBpm] = useState(0);
   const pollRef = useRef(null);
 
   useEffect(() => () => clearInterval(pollRef.current), []);
+
+  // Beat-synchronised haptics are opt-in and only run while a generated track plays.
+  // Web Vibration support varies by Android browser/device; audio playback still works without it.
+  useEffect(() => {
+    if (!hapticsEnabled || !audioPlaying || !activeBpm || typeof navigator === "undefined" || typeof navigator.vibrate !== "function") return;
+    const beatMs = 60000 / activeBpm;
+    const vibrate = () => navigator.vibrate(35);
+    vibrate();
+    const timer = setInterval(vibrate, beatMs);
+    return () => {
+      clearInterval(timer);
+      navigator.vibrate(0);
+    };
+  }, [hapticsEnabled, audioPlaying, activeBpm]);
 
   async function handleGenerate() {
     if (!prompt.trim() || submitting) return;
@@ -177,8 +194,29 @@ export default function CreatePage() {
                   {track.lyrics && <details className="mt-2"><summary className="cursor-pointer text-xs font-semibold text-teal">View generated lyrics</summary><pre className="mt-2 whitespace-pre-wrap text-sm text-muted">{track.lyrics}</pre></details>}
                   {track.audioUrl ? (
                     <>
-                      <audio controls preload="none" src={track.audioUrl} className="mt-2 w-full" />
-                      <a href={track.audioUrl} download className="mt-2 inline-block text-xs font-semibold text-teal underline">Download MP3</a>
+                      <audio
+                        controls
+                        preload="none"
+                        src={track.audioUrl}
+                        className="mt-2 w-full"
+                        onPlay={() => { setActiveBpm(Number(track.bpm) || 0); setAudioPlaying(true); }}
+                        onPause={() => setAudioPlaying(false)}
+                        onEnded={() => setAudioPlaying(false)}
+                      />
+                      <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+                        <label className="flex items-center gap-2 text-xs text-muted">
+                          <input
+                            type="checkbox"
+                            checked={hapticsEnabled}
+                            onChange={(event) => setHapticsEnabled(event.target.checked)}
+                            disabled={!track.bpm}
+                            className="h-4 w-4 accent-amber"
+                          />
+                          Beat vibration {track.bpm ? `(${track.bpm} BPM)` : "(BPM unavailable)"}
+                        </label>
+                        <a href={track.audioUrl} download className="text-xs font-semibold text-teal underline">Download MP3</a>
+                      </div>
+                      {hapticsEnabled && !track.bpm && <p className="mt-2 text-xs text-muted">Beat vibration needs BPM metadata from the music engine.</p>}
                     </>
                   ) : (
                     <p className="mt-2 text-xs text-muted">Audio not yet available.</p>
