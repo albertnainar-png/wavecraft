@@ -74,6 +74,21 @@ Generation uses:
 
 The code and model are open source, but GPU inference consumes compute. Community GPU sessions can help with early experiments but are not guaranteed always-on free services. Do not advertise unlimited free generations until a sustainable GPU host and usage policy are in place.
 
+## Android-only GPU setup
+
+You can operate the studio from an Android phone; the phone does not run the music model. Use the temporary Colab GPU worker notebook:
+
+[Open Albert's AI Song Studio GPU notebook in Google Colab](https://colab.research.google.com/github/albertnainar-png/wavecraft/blob/feature/ace-step-hybrid/gpu/Albert_AI_Song_Studio_Colab.ipynb)
+
+1. Open the notebook in Chrome on Android and sign in to Google.
+2. In Colab, select Runtime → Change runtime type → T4 GPU if one is offered. Availability is controlled by Google and is not guaranteed on free accounts.
+3. Run the cells from top to bottom. Keep the Colab session open while generating songs.
+4. Privately copy the printed HTTPS engine URL and API key.
+5. Set these server-side environment variables on the deployed Next.js app: `ACESTEP_API_URL` (the HTTPS tunnel URL) and `ACESTEP_API_KEY` (the generated key). Never use a `NEXT_PUBLIC_` prefix for the key and never commit either value to GitHub.
+6. Reload the studio and check the engine status indicator.
+
+The notebook uses a temporary Cloudflare Quick Tunnel for development. Its URL changes between sessions, and the Colab runtime can disconnect or expire. This is a test arrangement, not permanent hosting. Do not share the tunnel URL and API key together.
+
 ## Deployment
 
 Deploy the Next.js app and the ACE-Step GPU worker separately. A static hosting platform or ordinary web-service instance cannot run the large music model efficiently without a suitable GPU. Keep the engine URL configurable so the worker can move between test and production hosts without changing app code.
