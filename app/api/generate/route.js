@@ -9,6 +9,8 @@ const schema = z.object({
   prompt: z.string().min(3).max(500),
   styleTags: z.array(z.string()).min(1).max(5),
   instrumental: z.boolean().default(false),
+  lyrics: z.string().max(4096).optional().default(""),
+  vocalLanguage: z.string().max(12).optional().default("en"),
 });
 
 const CREDIT_COST = 1;
@@ -30,29 +32,30 @@ export async function POST(req) {
     return NextResponse.json({ error: "Not enough credits" }, { status: 402 });
   }
 
-  const { prompt, styleTags, instrumental } = parsed.data;
-
-  // Reserve the credit and create the job row before calling the provider,
-  // so a crash mid-request never leaves us billing without a record.
+  const { prompt, styleTags, instrumental, lyrics, vocalLanguage } = parsed.data;
   const generation = await db.$transaction(async (tx) => {
-    await tx.user.update({
-      where: { id: user.id },
+    const debit = await tx.user.updateMany({
+      where: { id: user.id, credits: { gte: CREDIT_COST } },
       data: { credits: { decrement: CREDIT_COST } },
     });
+    if (debit.count !== 1) return null;
     return tx.generation.create({
-      data: { userId: user.id, prompt, styleTags, instrumental, status: "pending" },
+      data: { userId: user.id, prompt, styleTags, instrumental, lyrics, vocalLanguage, status: "pending" },
     });
   });
 
+  if (!generation) {
+    return NextResponse.json({ error: "Not enough credits" }, { status: 402 });
+  }
+
   try {
-    const providerJobId = await requestGeneration({ prompt, styleTags, instrumental });
+    const providerJobId = await requestGeneration({ prompt, styleTags, instrumental, lyrics, vocalLanguage });
     const updated = await db.generation.update({
       where: { id: generation.id },
       data: { status: "processing", providerJobId },
     });
     return NextResponse.json({ generation: updated }, { status: 202 });
   } catch (err) {
-    // Refund the credit if the provider call itself failed to enqueue.
     await db.$transaction([
       db.user.update({ where: { id: user.id }, data: { credits: { increment: CREDIT_COST } } }),
       db.generation.update({
@@ -60,6 +63,9 @@ export async function POST(req) {
         data: { status: "failed", errorMessage: String(err.message || err) },
       }),
     ]);
-    return NextResponse.json({ error: "Failed to start generation", detail: String(err.message || err) }, { status: 502 });
+    return NextResponse.json(
+      { error: "Failed to start generation", detail: String(err.message || err) },
+      { status: 502 }
+    );
   }
 }
