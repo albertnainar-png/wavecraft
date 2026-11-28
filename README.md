@@ -96,3 +96,18 @@ Deploy the Next.js app and the ACE-Step GPU worker separately. A static hosting 
 ## Current status
 
 The ACE-Step integration is being developed on feature/ace-step-hybrid. A live full-song test is not complete until a reachable GPU engine is configured and an actual generation is returned.
+
+
+## Android APK
+
+The Android package uses Capacitor as a native Android shell around the hosted Next.js application. This keeps authentication, the personal library, generation APIs and audio delivery on the server while giving Android users an installable app.
+
+**A deployed HTTPS app URL is required before an APK can be built.** The APK does not contain the Next.js server or the GPU music model.
+
+To build a test APK without a laptop:
+1. Deploy the Next.js app and configure its database and server-side secrets.
+2. Open the repository's **Actions → Build Android APK → Run workflow** page.
+3. Enter the deployed HTTPS app URL and run the workflow.
+4. Download the generated APK from the workflow run's Artifacts section.
+
+The workflow creates the Android project, syncs the hosted app URL into the WebView wrapper, builds a debug APK and uploads it as an artifact. The first APK is for private testing; a signed release build and Play Store preparation are separate steps. Do not put ACE-Step API keys in the APK.
