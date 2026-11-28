@@ -14,12 +14,22 @@ export default function CreatePage() {
   const [submitting, setSubmitting] = useState(false);
   const [generation, setGeneration] = useState(null);
   const [error, setError] = useState(null);
+  const [engineStatus, setEngineStatus] = useState({ loading: true, configured: false, reachable: false, message: "Checking music engine…" });
   const [hapticsEnabled, setHapticsEnabled] = useState(false);
   const [audioPlaying, setAudioPlaying] = useState(false);
   const [activeBpm, setActiveBpm] = useState(0);
   const pollRef = useRef(null);
 
   useEffect(() => () => clearInterval(pollRef.current), []);
+
+  useEffect(() => {
+    let active = true;
+    fetch("/api/engine-status", { cache: "no-store" })
+      .then((response) => response.json())
+      .then((data) => { if (active) setEngineStatus({ ...data, loading: false }); })
+      .catch(() => { if (active) setEngineStatus({ loading: false, configured: false, reachable: false, message: "Could not check the music engine." }); });
+    return () => { active = false; };
+  }, []);
 
   // Beat-synchronised haptics are opt-in and only run while a generated track plays.
   // Web Vibration support varies by Android browser/device; audio playback still works without it.
@@ -83,6 +93,11 @@ export default function CreatePage() {
       <p className="mt-3 max-w-xl text-muted">
         Create original vocal songs or instrumentals. Your brief is sent to the connected open-source music engine and returned as playable audio.
       </p>
+      <div className="mt-4 flex flex-wrap items-center gap-2 text-xs" role="status" aria-live="polite">
+        <span className={`inline-block h-2 w-2 rounded-full ${engineStatus.loading ? "bg-amber" : engineStatus.reachable ? "bg-teal" : "bg-magenta"}`} />
+        <span className="text-muted">{engineStatus.loading ? "Checking engine…" : engineStatus.message}</span>
+        {engineStatus.model && <span className="rounded-full border border-line px-2 py-1 text-muted">{engineStatus.model}</span>}
+      </div>
 
       <div className="mt-8 rounded-2xl border border-line bg-panel p-4 sm:p-5">
         <label htmlFor="prompt" className="font-mono text-[11px] uppercase tracking-wider text-muted">
